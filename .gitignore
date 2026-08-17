@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.vite/
+
+# Артефакты стенда: кадры и собранные композиты — генерируемые файлы
+tools/shots/
+tools/out/
+
+.DS_Store
+*.log

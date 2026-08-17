@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Последний сигнал</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="oxygen">
+        <div class="label">КИСЛОРОД</div>
+        <div class="bar"><div class="fill"></div></div>
+        <div class="time">04:00</div>
+      </div>
+
+      <div id="objective">
+        <div class="cells">
+          <span class="cell"></span><span class="cell"></span><span class="cell"></span>
+        </div>
+        <div class="text">—</div>
+      </div>
+
+      <div id="subtitle"></div>
+
+      <div id="controls">
+        <b>WASD</b> движение · <b>Space</b> прыжок · <b>Q/E</b> камера · <b>F</b> фонарь ·
+        <b>M</b> карта
+      </div>
+    </div>
+
+    <!-- Карта -->
+    <div id="map">
+      <div class="panel">
+        <div class="head">
+          <span class="title">КАРТА · КРАТЕР-7</span>
+          <span class="count" id="map-count">0 / 8</span>
+        </div>
+        <canvas id="map-canvas" width="420" height="420"></canvas>
+        <div class="foot">
+          <span>Клик — поставить метку · клик по метке — убрать</span>
+          <span><b>M</b> или <b>Esc</b> — закрыть</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Экраны -->
+    <div id="screen" class="screen">
+      <div class="inner">
+        <h1>ПОСЛЕДНИЙ СИГНАЛ</h1>
+        <p class="sub">Кратер-7 · лунная станция</p>
+        <p class="body">
+          Пылевая волна оборвала связь с Землёй и вырвала энергоячейки из антенны.
+          Станция спит. В скафандре — четыре минуты кислорода.
+        </p>
+        <button id="start">НАЧАТЬ ВЫХОД</button>
+      </div>
+    </div>
+  </body>
+  <script type="module" src="/src/main.js"></script>
+</html>

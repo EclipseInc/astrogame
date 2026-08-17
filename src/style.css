@@ -1,0 +1,305 @@
+:root {
+  --ink: #d9e2ea;
+  --dim: #aebbc7;
+  --warn: #e8703a;
+  --good: #7fd4c1;
+  --panel: rgba(8, 11, 16, 0.55);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
+  color: var(--ink);
+  user-select: none;
+}
+
+#scene {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+.hidden {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* ---------- HUD ---------- */
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+  /* Фон под HUD — то чёрная тень, то яркий реголит. Тёмное гало держит
+     читаемость на любом кадре, не добавляя панелей поверх картинки. */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 9px rgba(0, 0, 0, 0.65);
+}
+
+#oxygen {
+  position: absolute;
+  top: 26px;
+  left: 26px;
+  width: 220px;
+}
+
+#oxygen .label {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--dim);
+  margin-bottom: 6px;
+}
+
+#oxygen .bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+#oxygen .fill {
+  height: 100%;
+  width: 100%;
+  background: var(--good);
+  transition: width 0.2s linear, background 0.4s ease;
+}
+
+#oxygen .time {
+  margin-top: 6px;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+#oxygen.low .fill {
+  background: var(--warn);
+}
+
+#oxygen.low .time {
+  color: var(--warn);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+#objective {
+  position: absolute;
+  top: 26px;
+  right: 26px;
+  text-align: right;
+  max-width: 320px;
+}
+
+#objective .cells {
+  display: flex;
+  gap: 7px;
+  justify-content: flex-end;
+  margin-bottom: 9px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+#objective .cell {
+  width: 22px;
+  height: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(0, 0, 0, 0.3);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+#objective .cell.filled {
+  background: var(--good);
+  box-shadow: 0 0 12px var(--good);
+}
+
+#objective .text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+#subtitle {
+  position: absolute;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 640px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 10px 18px;
+  background: var(--panel);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+#subtitle.show {
+  opacity: 1;
+}
+
+#subtitle b {
+  color: var(--good);
+  font-weight: 500;
+}
+
+#controls {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 0.04em;
+}
+
+#controls b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ---------- Карта ---------- */
+
+#map {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 7, 11, 0.55);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+  z-index: 5;
+}
+
+#map.shown {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#map .panel {
+  background: rgba(9, 13, 18, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+#map .head,
+#map .foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+}
+
+#map .head {
+  margin-bottom: 11px;
+}
+
+#map .title {
+  color: var(--ink);
+}
+
+#map .foot {
+  margin-top: 11px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+#map .foot b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+#map canvas {
+  display: block;
+  width: 420px;
+  height: 420px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: crosshair;
+}
+
+/* ---------- Экраны ---------- */
+
+.screen {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at center, #0a0f16 0%, #000 70%);
+  transition: opacity 0.8s ease;
+  z-index: 10;
+}
+
+.screen.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.screen .inner {
+  text-align: center;
+  max-width: 520px;
+  padding: 40px;
+}
+
+.screen h1 {
+  font-size: 38px;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  margin-bottom: 14px;
+}
+
+.screen .sub {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--dim);
+  margin-bottom: 34px;
+}
+
+.screen .body {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #9aa7b4;
+  margin-bottom: 38px;
+}
+
+.screen button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  padding: 14px 32px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.screen button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--ink);
+}
+
+.screen.fail h1 {
+  color: var(--warn);
+}
+
+.screen.win h1 {
+  color: var(--good);
+}
