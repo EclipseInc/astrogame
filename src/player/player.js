@@ -210,6 +210,7 @@ export function createPlayer(scene, spawn) {
     coyote: 0,
     buffer: 0,
     justLanded: false,
+    justJumped: false,
     landingSpeed: 0,
     stepped: false, // флаг для системы следов
 
@@ -225,6 +226,7 @@ export function createPlayer(scene, spawn) {
     update(dt, input, camYaw) {
       const wasGrounded = player.grounded;
       player.justLanded = false;
+      player.justJumped = false;
       player.stepped = false;
 
       // Направления относительно текущего угла камеры
@@ -249,6 +251,7 @@ export function createPlayer(scene, spawn) {
 
       if (player.buffer > 0 && player.coyote > 0) {
         velocity.y = CONFIG.jumpSpeed;
+        player.justJumped = true;
         player.buffer = 0;
         player.coyote = 0;
         player.grounded = false;

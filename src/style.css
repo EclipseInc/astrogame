@@ -170,6 +170,52 @@ body {
   font-weight: 500;
 }
 
+#mute {
+  position: absolute;
+  right: 26px;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* HUD не ловит клики, а эта кнопка должна */
+  pointer-events: auto;
+  min-height: 36px;
+  padding: 9px 14px;
+  background: rgba(8, 11, 16, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--dim);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+#mute:hover {
+  color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+#mute .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 0 8px var(--good);
+  transition: all 0.2s ease;
+}
+
+#mute.off .dot {
+  background: transparent;
+  border: 1px solid var(--dim);
+  box-shadow: none;
+}
+
+#mute.off .label {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
 /* ---------- Карта ---------- */
 
 #map {

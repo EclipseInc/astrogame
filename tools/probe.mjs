@@ -24,6 +24,8 @@ export async function launch({ width = 1280, height = 720 } = {}) {
       "--enable-unsafe-swiftshader",
       "--disable-dev-shm-usage",
       "--no-sandbox",
+      // без этого AudioContext в headless остаётся suspended и звук не проверить
+      "--autoplay-policy=no-user-gesture-required",
     ],
     defaultViewport: { width, height, deviceScaleFactor: 1 },
   });

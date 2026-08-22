@@ -4,6 +4,7 @@ import { createIsoCamera } from "./camera/isoCamera.js";
 import { createSky } from "./world/sky.js";
 import { createHUD } from "./ui/hud.js";
 import { createMinimap } from "./ui/minimap.js";
+import { createAudio } from "./audio/audio.js";
 import { createGame } from "./game/game.js";
 
 const canvas = document.getElementById("scene");
@@ -29,7 +30,9 @@ const sky = createSky();
 sky.resize(window.innerWidth / window.innerHeight);
 
 const minimap = createMinimap();
-const game = createGame({ hud, input, isoCam, minimap });
+const audio = createAudio();
+hud.bindMute(audio);
+const game = createGame({ hud, input, isoCam, minimap, audio });
 
 window.addEventListener("resize", () => {
   const aspect = window.innerWidth / window.innerHeight;
@@ -42,6 +45,9 @@ let started = false;
 document.getElementById("start").addEventListener("click", () => {
   if (started) return;
   started = true;
+  // Браузер разрешает звук только из обработчика жеста — вот он
+  audio.init();
+  audio.radio();
   hud.hideScreen();
   hud.show();
 });
@@ -49,7 +55,7 @@ document.getElementById("start").addEventListener("click", () => {
 // Дев-хук: удобно дёргать шаги симуляции и состояние из консоли
 if (import.meta.env.DEV) {
   const collision = await import("./world/collision.js");
-  window.__game = { game, isoCam, input, renderer, collision, minimap };
+  window.__game = { game, isoCam, input, renderer, collision, minimap, audio };
 }
 
 const clock = new THREE.Clock();

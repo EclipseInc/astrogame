@@ -31,7 +31,7 @@ const CANISTER_SPOTS = [
   { x: -112, z: -44 },
 ];
 
-export function createGame({ hud, input, isoCam, minimap }) {
+export function createGame({ hud, input, isoCam, minimap, audio }) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
   // Тумана нет намеренно: на Луне нет атмосферы, дымка сразу читается как Земля.
@@ -72,8 +72,15 @@ export function createGame({ hud, input, isoCam, minimap }) {
   hud.setOxygen(state.oxygen, CONFIG.oxygenSeconds);
   hud.setObjective("Найти энергоячейку");
   hud.say("<b>Кратер-7:</b> Луми, связь с Землёй потеряна. Антенна обесточена.", 5);
+  // радио здесь не играет: звук ещё не разрешён до жеста пользователя
 
   const tmp = new THREE.Vector3();
+
+  /** Реплика станции: сначала несущая, потом текст. */
+  function say(text, seconds) {
+    audio.radio();
+    hud.say(text, seconds);
+  }
 
   function beat(id, fn) {
     if (state.beats.has(id)) return;
@@ -101,7 +108,8 @@ export function createGame({ hud, input, isoCam, minimap }) {
     cell.group.position.set(0, 0, 0);
     cell.group.rotation.set(0, 0, 0);
     hud.setObjective("Доставить ячейку к антенне");
-    hud.say("<b>Кратер-7:</b> Ячейка у тебя. Неси её к антенне.", 4);
+    audio.pickup();
+    say("<b>Кратер-7:</b> Ячейка у тебя. Неси её к антенне.", 4);
   }
 
   function deposit() {
@@ -121,17 +129,18 @@ export function createGame({ hud, input, isoCam, minimap }) {
     state.carrying = null;
     state.delivered++;
     hud.setCells(state.delivered);
+    audio.deposit();
 
     if (state.delivered >= 3) {
       startWin();
     } else {
       const next = CELL_SPOTS[state.delivered];
       hud.setObjective("Найти энергоячейку");
-      hud.say(`<b>Кратер-7:</b> Есть контакт. ${next.hint}`, 5.5);
+      say(`<b>Кратер-7:</b> Есть контакт. ${next.hint}`, 5.5);
       if (state.delivered === 1) {
         beat("crater", () =>
           setTimeout(
-            () => hud.say("<b>Кратер-7:</b> Спускайся по уступам. Прыжок здесь длинный — целься по маркеру.", 5),
+            () => say("<b>Кратер-7:</b> Спускайся по уступам. Прыжок здесь длинный — целься по маркеру.", 5),
             5600
           )
         );
@@ -139,7 +148,7 @@ export function createGame({ hud, input, isoCam, minimap }) {
       if (state.delivered === 2) {
         beat("dark", () =>
           setTimeout(
-            () => hud.say("<b>Кратер-7:</b> Там вечная тень. Включи фонарь — <b>F</b>.", 5),
+            () => say("<b>Кратер-7:</b> Там вечная тень. Включи фонарь — <b>F</b>.", 5),
             5600
           )
         );
@@ -151,11 +160,13 @@ export function createGame({ hud, input, isoCam, minimap }) {
     state.phase = "win";
     state.winTimer = 0;
     hud.setObjective("Связь восстановлена");
-    hud.say("<b>Кратер-7:</b> Питание есть. Разворачиваю антенну…", 6);
+    audio.win();
+    say("<b>Кратер-7:</b> Питание есть. Разворачиваю антенну…", 6);
   }
 
   function fail() {
     state.phase = "fail";
+    audio.fail();
     const btn = hud.showScreen({
       title: "КИСЛОРОД ИСЧЕРПАН",
       sub: "связь не восстановлена",
@@ -175,6 +186,10 @@ export function createGame({ hud, input, isoCam, minimap }) {
       state.time += dt;
       hud.tick(dt);
 
+      // Дыхание учащается по мере расхода кислорода, пульс включается под конец
+      audio.setUrgency(1 - state.oxygen / CONFIG.oxygenSeconds);
+      audio.update(dt);
+
       if (state.phase === "play") {
         state.oxygen -= dt;
         hud.setOxygen(state.oxygen, CONFIG.oxygenSeconds);
@@ -184,7 +199,8 @@ export function createGame({ hud, input, isoCam, minimap }) {
         }
         if (state.oxygen < CONFIG.oxygenLowAt) {
           beat("low", () =>
-            hud.say("<b>Кратер-7:</b> Минута кислорода. Ищи баллоны — они помечены белым.", 5)
+            (audio.warning(),
+            say("<b>Кратер-7:</b> Минута кислорода. Ищи баллоны — они помечены белым.", 5))
           );
         }
       }
@@ -205,9 +221,12 @@ export function createGame({ hud, input, isoCam, minimap }) {
       if (player.stepped) {
         footprints.step(player.position, player.facing);
         dust.burst(player.position, 3, 0.35);
+        audio.step();
       }
+      if (player.justJumped) audio.jump();
       if (player.justLanded && player.landingSpeed > 1.5) {
         dust.burst(player.position, 14, Math.min(1.6, player.landingSpeed * 0.22));
+        audio.land(player.landingSpeed * 0.28);
       }
       dust.update(dt);
 
@@ -230,13 +249,14 @@ export function createGame({ hud, input, isoCam, minimap }) {
           can.state = "used";
           can.group.visible = false;
           state.oxygen = Math.min(CONFIG.oxygenSeconds, state.oxygen + can.bonus);
+          audio.canister();
           hud.say(`<b>+${can.bonus} сек кислорода</b>`, 2.5);
         }
 
         // Подсказки первых секунд — обучение без отдельного туториала
         if (state.time > 4 && state.delivered === 0 && !state.carrying) {
           beat("intro2", () =>
-            hud.say(
+            say(
               "<b>Кратер-7:</b> Тяготение здесь слабое — прыгай смело. " + CELL_SPOTS[0].hint,
               6
             )
@@ -244,7 +264,7 @@ export function createGame({ hud, input, isoCam, minimap }) {
         }
         if (state.time > 12) {
           beat("camHint", () =>
-            hud.say("Камеру можно повернуть на <b>Q</b> / <b>E</b>, если что-то заслоняет обзор.", 5)
+            say("Камеру можно повернуть на <b>Q</b> / <b>E</b>, если что-то заслоняет обзор.", 5)
           );
         }
       }

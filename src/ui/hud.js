@@ -7,12 +7,23 @@ export function createHUD() {
   const cellEls = [...document.querySelectorAll("#objective .cell")];
   const subtitleEl = document.getElementById("subtitle");
   const screenEl = document.getElementById("screen");
+  const muteEl = document.getElementById("mute");
 
   let subtitleTimer = 0;
 
   return {
     show() {
       hud.classList.remove("hidden");
+    },
+
+    /** Кнопка звука: состояние приходит из аудиодвижка, HUD его только рисует. */
+    bindMute(audio) {
+      const paint = () => muteEl.classList.toggle("off", audio.muted);
+      paint();
+      muteEl.addEventListener("click", () => {
+        audio.toggleMute();
+        paint();
+      });
     },
 
     setOxygen(seconds, total) {
