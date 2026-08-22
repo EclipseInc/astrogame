@@ -182,9 +182,24 @@ export function createPlayer(scene, spawn) {
 
   // Фонарь: в акте 3 это единственный источник света
   const torch = new THREE.SpotLight(0xdfeaff, 0, 26, 0.55, 0.45, 1.2);
-  torch.position.set(0, 1.5, 0);
+  // Вынесен вперёд груди: изнутри торса он бы упирался в собственный скафандр
+  // и космонавт закрывал бы сам себе луч.
+  torch.position.set(0, 1.45, 0.45);
+
+  // Без этого луч проходил сквозь валуны насквозь — камни не отбрасывали
+  // от него тени. Карта меньше солнечной: конус добивает всего на 26 м.
+  torch.castShadow = true;
+  torch.shadow.mapSize.set(1024, 1024);
+  torch.shadow.camera.near = 0.4;
+  torch.shadow.camera.far = 30;
+  torch.shadow.bias = -0.0015;
+  torch.shadow.normalBias = 0.04;
+  // Выключенный источник всё равно рисовал бы карту теней каждый кадр
+  torch.visible = false;
+  torch.intensity = 90;
+
   const torchTarget = new THREE.Object3D();
-  torchTarget.position.set(0, 0.6, 4);
+  torchTarget.position.set(0, 0.5, 4);
   model.body.add(torch);
   model.body.add(torchTarget);
   torch.target = torchTarget;
@@ -239,7 +254,7 @@ export function createPlayer(scene, spawn) {
 
     toggleTorch() {
       player.torchOn = !player.torchOn;
-      torch.intensity = player.torchOn ? 90 : 0;
+      torch.visible = player.torchOn;
     },
 
     update(dt, input, camYaw) {
