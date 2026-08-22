@@ -177,6 +177,120 @@ export function createShadowRidge(scene, target) {
   return group;
 }
 
+const crystalMat = new THREE.MeshStandardMaterial({
+  color: 0x0e2a30,
+  emissive: 0x2fd6b8,
+  // Выше ~1.5 тон-маппинг выбеливает кристаллы в белый и цвет теряется
+  emissiveIntensity: 1.35,
+  roughness: 0.25,
+  metalness: 0.1,
+  flatShading: true,
+});
+
+const crystalMatWarm = new THREE.MeshStandardMaterial({
+  color: 0x2a1030,
+  emissive: 0x9d5fe0,
+  emissiveIntensity: 1.25,
+  roughness: 0.25,
+  metalness: 0.1,
+  flatShading: true,
+});
+
+/** Кучка кристаллов: в вечной тени это единственное, что видно без фонаря. */
+function crystalCluster(parent, x, y, z, rand, count = 4, scale = 1) {
+  for (let i = 0; i < count; i++) {
+    const h = (0.4 + rand() * 0.7) * scale;
+    const mesh = new THREE.Mesh(
+      new THREE.ConeGeometry(0.11 * scale + rand() * 0.06, h, 5),
+      rand() < 0.3 ? crystalMatWarm : crystalMat
+    );
+    const a = rand() * Math.PI * 2;
+    const d = rand() * 0.5 * scale;
+    mesh.position.set(x + Math.cos(a) * d, y + h * 0.45, z + Math.sin(a) * d);
+    mesh.rotation.set((rand() - 0.5) * 0.5, rand() * 6, (rand() - 0.5) * 0.5);
+    parent.add(mesh);
+  }
+}
+
+/**
+ * Акт 3: поле колонн в тёмном кратере. Прыгать приходится вслепую — работают
+ * только фонарь и маркер приземления, а кристаллы показывают, где следующая
+ * колонна. Промах не убивает: падаешь на дно и выбираешься через кромку,
+ * теряя кислород. Наказание временем, а не смертью.
+ */
+export function createShadowCourse(scene, { crater, target, approach }) {
+  const rand = mulberry32(5150);
+  const group = new THREE.Group();
+  group.name = "shadowCourse";
+
+  // Стартуем на кромке с той стороны, откуда игрок приходит
+  const a0 = Math.atan2(approach.z - crater.z, approach.x - crater.x);
+  const start = {
+    x: crater.x + Math.cos(a0) * crater.r * 1.05,
+    z: crater.z + Math.sin(a0) * crater.r * 1.05,
+  };
+
+  const dx = target.x - start.x;
+  const dz = target.z - start.z;
+  const len = Math.hypot(dx, dz);
+  const dir = { x: dx / len, z: dz / len };
+  const perp = { x: dir.z, z: -dir.x };
+
+  const COUNT = 6;
+  const columns = [];
+
+  for (let i = 0; i < COUNT; i++) {
+    const t = i / (COUNT - 1);
+    // Зигзаг: прыжки идут по диагонали экрана, как и на ступенях кратера
+    const zig = i === 0 || i === COUNT - 1 ? 0 : (i % 2 ? 1 : -1) * (2.2 + rand() * 1.1);
+
+    const x = start.x + dir.x * len * t + perp.x * zig;
+    const z = start.z + dir.z * len * t + perp.z * zig;
+
+    const ground = terrainHeight(x, z);
+    // Ниже высоты прыжка (3 м) только крайние: с них можно вернуться с дна
+    const rise = 2.0 + Math.sin(t * Math.PI) * 1.3;
+    const top = ground + rise;
+    const r = i === COUNT - 1 ? 2.4 : 1.5 + rand() * 0.45;
+
+    const height = top - (ground - 4);
+    const mesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(r, r * 1.1, height, 6),
+      darkRockMat
+    );
+    mesh.position.set(x, top - height / 2, z);
+    mesh.rotation.y = rand() * 6;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+
+    crystalCluster(group, x, top, z, rand, i === COUNT - 1 ? 7 : 4, i === COUNT - 1 ? 1.4 : 1);
+
+    // Реальный свет — не на каждой колонне: источники дороже, чем свечение
+    if (i % 2 === 1 || i === COUNT - 1) {
+      const light = new THREE.PointLight(0x54e0c8, 7, 13, 2);
+      light.position.set(x, top + 0.7, z);
+      group.add(light);
+    }
+
+    const p = addPlatform(x, z, r * 0.95, top);
+    p.kind = "column";
+    columns.push({ x, z, r, top });
+  }
+
+  // Кристаллы на дне: упал — видно, куда идти, чтобы выбраться
+  for (let i = 0; i < 14; i++) {
+    const a = rand() * Math.PI * 2;
+    const d = rand() * crater.r * 0.8;
+    const x = crater.x + Math.cos(a) * d;
+    const z = crater.z + Math.sin(a) * d;
+    crystalCluster(group, x, terrainHeight(x, z), z, rand, 2, 0.7);
+  }
+
+  scene.add(group);
+  return { group, columns, start, finish: columns[COUNT - 1] };
+}
+
 /** Антенна станции: сюда возвращают энергоячейки. */
 export function createStation(scene) {
   const group = new THREE.Group();

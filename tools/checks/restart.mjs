@@ -6,7 +6,12 @@ await openGame(page);
 const r = await page.evaluate(async () => {
   const G = window.__game, P = G.game.player;
   const step = (n) => { for (let i = 0; i < n; i++) { G.game.update(1 / 60); G.input.endFrame(); } };
-  const tp = (x, z) => { P.position.set(x, -50, z); P.velocity.set(0, 0, 0); step(12); };
+  // Ставим НА верхнюю поверхность: ячейка «C» лежит на колонне, а не на дне
+  const tp = (x, z) => {
+    P.position.set(x, G.collision.surfaceHeightAt(x, z) + 0.4, z);
+    P.velocity.set(0, 0, 0);
+    step(12);
+  };
   const out = {};
 
   // проходим игру целиком
@@ -41,7 +46,12 @@ const r = await page.evaluate(async () => {
 const second = await page.evaluate(() => {
   const G = window.__game, P = G.game.player;
   const step = (n) => { for (let i = 0; i < n; i++) { G.game.update(1 / 60); G.input.endFrame(); } };
-  const tp = (x, z) => { P.position.set(x, -50, z); P.velocity.set(0, 0, 0); step(12); };
+  // Ставим НА верхнюю поверхность: ячейка «C» лежит на колонне, а не на дне
+  const tp = (x, z) => {
+    P.position.set(x, G.collision.surfaceHeightAt(x, z) + 0.4, z);
+    P.velocity.set(0, 0, 0);
+    step(12);
+  };
   for (const [x, z] of [[-27, -19], [-74, 59], [-118, -78]]) { tp(x, z); tp(0, 0); }
   step(60 * 8);
   return {

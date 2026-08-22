@@ -1,11 +1,12 @@
 import * as THREE from "three";
 import { CONFIG } from "../config.js";
-import { createTerrain } from "../world/terrain.js";
+import { createTerrain, CRATERS } from "../world/terrain.js";
 import { createLighting } from "../world/lighting.js";
 import {
   createBoulders,
   createCraterSteps,
   createRover,
+  createShadowCourse,
   createShadowRidge,
   createStation,
 } from "../world/props.js";
@@ -20,7 +21,7 @@ const SPAWN = { x: 15, z: 13 };
 const CELL_SPOTS = [
   { x: -27, z: -19, hint: "Ячейка &laquo;A&raquo; — к юго-западу, за валунами." },
   { x: -74, z: 59, hint: "Ячейка &laquo;B&raquo; — на дне большого кратера." },
-  { x: -118, z: -78, hint: "Ячейка &laquo;C&raquo; — в теневой зоне за грядой." },
+  { x: -118, z: -78, hint: "Ячейка &laquo;C&raquo; — в теневой зоне, на колоннах." },
 ];
 
 const CANISTER_SPOTS = [
@@ -43,9 +44,18 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
   createRover(scene, 18, 15);
   createCraterSteps(scene);
   createShadowRidge(scene, CELL_SPOTS[2]);
+
+  // Акт 3: колонны в тёмном кратере, ячейка «C» ждёт на последней из них
+  const course = createShadowCourse(scene, {
+    crater: CRATERS[3],
+    target: CELL_SPOTS[2],
+    approach: { x: 0, z: 0 }, // игрок приходит со стороны станции
+  });
+
   createBoulders(scene, [
     ...CELL_SPOTS.map((s) => ({ ...s, r: 7 })),
     ...CANISTER_SPOTS.map((s) => ({ ...s, r: 4 })),
+    ...course.columns.map((c) => ({ x: c.x, z: c.z, r: 7 })),
     { x: SPAWN.x, z: SPAWN.z, r: 8 },
   ]);
 
@@ -203,7 +213,12 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
       if (state.delivered === 2) {
         beat("dark", () =>
           later(
-            () => say("<b>Кратер-7:</b> Там вечная тень. Включи фонарь — <b>F</b>.", 5),
+            () =>
+              say(
+                "<b>Кратер-7:</b> Там вечная тень. Включи фонарь — <b>F</b>. " +
+                  "Дальше только по колоннам: кристаллы покажут следующую.",
+                6
+              ),
             5600
           )
         );
