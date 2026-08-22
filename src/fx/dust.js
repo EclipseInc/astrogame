@@ -34,6 +34,14 @@ export function createDust(scene, max = 400) {
 
   return {
     points,
+
+    clear() {
+      for (let i = 0; i < max; i++) {
+        life[i] = 0;
+        positions[i * 3 + 1] = -9999;
+      }
+      geo.attributes.position.needsUpdate = true;
+    },
     burst(origin, count, power = 1) {
       for (let i = 0; i < count; i++) {
         const idx = cursor;

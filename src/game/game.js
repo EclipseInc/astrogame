@@ -9,7 +9,7 @@ import {
   createShadowRidge,
   createStation,
 } from "../world/props.js";
-import { animateItem, createCanister, createEnergyCell } from "../world/items.js";
+import { animateItem, createCanister, createEnergyCell, resetItem } from "../world/items.js";
 import { createPlayer } from "../player/player.js";
 import { createFootprints } from "../fx/footprints.js";
 import { createDust } from "../fx/dust.js";
@@ -67,14 +67,69 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
     beats: new Set(),
   };
 
-  isoCam.snap(player.position);
-  hud.setCells(0);
-  hud.setOxygen(state.oxygen, CONFIG.oxygenSeconds);
-  hud.setObjective("Найти энергоячейку");
-  hud.say("<b>Кратер-7:</b> Луми, связь с Землёй потеряна. Антенна обесточена.", 5);
-  // радио здесь не играет: звук ещё не разрешён до жеста пользователя
-
   const tmp = new THREE.Vector3();
+
+  // Отложенные реплики: при перезапуске их надо снимать, иначе старые
+  // подсказки прилетают посреди нового забега.
+  const timers = new Set();
+  function later(fn, ms) {
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
+    timers.add(id);
+  }
+
+  const INTRO = "<b>Кратер-7:</b> Луми, связь с Землёй потеряна. Антенна обесточена.";
+
+  /**
+   * Перезапуск забега без пересборки мира: рельеф, камни и станция статичны,
+   * меняется только состояние. Отсюда мгновенный рестарт вместо перезагрузки.
+   */
+  function startRun() {
+    for (const id of timers) clearTimeout(id);
+    timers.clear();
+
+    state.phase = "play";
+    state.oxygen = CONFIG.oxygenSeconds;
+    state.delivered = 0;
+    state.carrying = null;
+    state.time = 0;
+    state.winTimer = 0;
+    state.beats.clear();
+
+    for (const item of [...cells, ...canisters]) resetItem(item, scene);
+
+    for (const socket of station.sockets) {
+      socket.filled = false;
+      socket.ring.material.emissive.setHex(0x000000);
+      socket.ring.material.emissiveIntensity = 0;
+    }
+    station.dish.rotation.set(Math.PI * 0.72, 0, 0.3);
+    lighting.setDawn(0);
+
+    player.reset(SPAWN);
+    footprints.clear();
+    dust.clear();
+    isoCam.snap(player.position);
+
+    audio.setUrgency(0);
+    hud.setCells(0);
+    hud.setOxygen(state.oxygen, CONFIG.oxygenSeconds);
+    hud.setObjective("Найти энергоячейку");
+  }
+
+  /** Кнопка на экране финала: возвращаемся в игру мгновенно. */
+  function restart() {
+    startRun();
+    hud.hideScreen();
+    minimap.close();
+    say(INTRO, 5);
+  }
+
+  startRun();
+  // радио здесь не играет: звук ещё не разрешён до жеста пользователя
+  hud.say(INTRO, 5);
 
   /** Реплика станции: сначала несущая, потом текст. */
   function say(text, seconds) {
@@ -139,7 +194,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
       say(`<b>Кратер-7:</b> Есть контакт. ${next.hint}`, 5.5);
       if (state.delivered === 1) {
         beat("crater", () =>
-          setTimeout(
+          later(
             () => say("<b>Кратер-7:</b> Спускайся по уступам. Прыжок здесь длинный — целься по маркеру.", 5),
             5600
           )
@@ -147,7 +202,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
       }
       if (state.delivered === 2) {
         beat("dark", () =>
-          setTimeout(
+          later(
             () => say("<b>Кратер-7:</b> Там вечная тень. Включи фонарь — <b>F</b>.", 5),
             5600
           )
@@ -174,7 +229,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
       button: "ПОПРОБОВАТЬ СНОВА",
       variant: "fail",
     });
-    btn.addEventListener("click", () => location.reload());
+    btn.addEventListener("click", restart);
   }
 
   return {
@@ -286,7 +341,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
             button: "ПРОЙТИ СНОВА",
             variant: "win",
           });
-          btn.addEventListener("click", () => location.reload());
+          btn.addEventListener("click", restart);
         }
       }
 

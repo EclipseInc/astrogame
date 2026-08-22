@@ -218,6 +218,25 @@ export function createPlayer(scene, spawn) {
       return root.position;
     },
 
+    /** Возврат в исходное состояние без пересоздания модели. */
+    reset(spawn) {
+      root.position.set(spawn.x, groundHeightAt(spawn.x, spawn.z), spawn.z);
+      velocity.set(0, 0, 0);
+      player.grounded = true;
+      player.facing = 0;
+      player.walkPhase = 0;
+      player.airBlend = 0;
+      player.animSpeed = 0;
+      player.coyote = 0;
+      player.buffer = 0;
+      player.justLanded = false;
+      player.justJumped = false;
+      player.stepped = false;
+      if (player.torchOn) player.toggleTorch();
+      model.body.rotation.y = 0;
+      model.body.position.y = 0;
+    },
+
     toggleTorch() {
       player.torchOn = !player.torchOn;
       torch.intensity = player.torchOn ? 90 : 0;

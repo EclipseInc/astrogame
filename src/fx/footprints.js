@@ -32,6 +32,14 @@ export function createFootprints(scene, max = 260) {
 
   return {
     mesh,
+
+    /** Стереть все следы — нужно при перезапуске забега. */
+    clear() {
+      for (let i = 0; i < max; i++) mesh.setMatrixAt(i, hidden);
+      mesh.instanceMatrix.needsUpdate = true;
+      cursor = 0;
+      side = 1;
+    },
     /** Ставит пару следов под игроком, чередуя левую и правую ногу. */
     step(position, facing) {
       const offset = side * 0.17;

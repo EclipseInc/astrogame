@@ -89,6 +89,16 @@ export function createCanister(scene, x, z, bonus = 30) {
   };
 }
 
+/** Возвращает предмет в мир на исходное место (перезапуск забега). */
+export function resetItem(item, scene) {
+  if (item.group.parent !== scene) scene.add(item.group);
+  item.group.position.copy(item.home);
+  item.group.rotation.set(0, 0, 0);
+  item.group.visible = true;
+  item.state = "world";
+  if (item.light) item.light.intensity = 12;
+}
+
 /** Покачивание и вращение — предметы должны быть заметны на сером фоне. */
 export function animateItem(item, time) {
   if (item.state !== "world") return;
