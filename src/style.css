@@ -130,6 +130,23 @@ body {
   color: var(--dim);
 }
 
+#objective .finds {
+  margin-top: 10px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--dim);
+  opacity: 0.75;
+}
+
+#objective .finds b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+#objective .finds.got b {
+  color: var(--good);
+}
+
 #subtitle {
   position: absolute;
   bottom: 88px;

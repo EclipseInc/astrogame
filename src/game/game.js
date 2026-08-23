@@ -11,6 +11,7 @@ import {
   createStation,
 } from "../world/props.js";
 import { animateItem, createCanister, createEnergyCell, resetItem } from "../world/items.js";
+import { animateFinds, createFinds, resetFinds } from "../world/finds.js";
 import { createPlayer } from "../player/player.js";
 import { createFootprints } from "../fx/footprints.js";
 import { createDust } from "../fx/dust.js";
@@ -24,12 +25,46 @@ const CELL_SPOTS = [
   { x: -118, z: -78, hint: "Ячейка &laquo;C&raquo; — в теневой зоне, на колоннах." },
 ];
 
+// Находки стоят в стороне от маршрута: за ними надо специально сходить.
+// Рядом с каждой лежит баллон, иначе при таймере в 4 минуты крюк никто не сделает.
+const FIND_SPOTS = [
+  {
+    type: "probe",
+    x: 62,
+    z: -38,
+    near: "<b>Кратер-7:</b> Фиксирую металл к востоку. Не наш.",
+    line:
+      "<b>Кратер-7:</b> Автоматическая станция, сгорела при посадке. " +
+      "В реестре её нет — значит, садилась не по плану.",
+  },
+  {
+    type: "tracks",
+    x: -46,
+    z: 104,
+    near: "<b>Кратер-7:</b> Луми, впереди борозды в реголите. Свежими их не назвать.",
+    line:
+      "<b>Кратер-7:</b> Следы скафандра. Обрываются на полушаге — " +
+      "дальше реголит нетронут. До нас здесь кто-то стоял.",
+  },
+  {
+    type: "meteorite",
+    x: -152,
+    z: 26,
+    near: "<b>Кратер-7:</b> Слева воронка. Совсем свежая.",
+    line:
+      "<b>Кратер-7:</b> Вот что оборвало связь. Такой камень идёт роем — " +
+      "и рой ещё не кончился.",
+  },
+];
+
 const CANISTER_SPOTS = [
   { x: -12, z: -30 },
   { x: -52, z: 26 },
   { x: -92, z: 34 },
   { x: -74, z: -46 },
   { x: -112, z: -44 },
+  // по баллону рядом с каждой находкой: награда за крюк
+  ...FIND_SPOTS.map((f) => ({ x: f.x + 4, z: f.z + 4 })),
 ];
 
 export function createGame({ hud, input, isoCam, minimap, audio }) {
@@ -64,6 +99,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
   const footprints = createFootprints(scene);
   const dust = createDust(scene);
 
+  const finds = createFinds(scene, FIND_SPOTS);
   const cells = CELL_SPOTS.map((s, i) => createEnergyCell(scene, s.x, s.z, i));
   const canisters = CANISTER_SPOTS.map((s) => createCanister(scene, s.x, s.z));
 
@@ -74,6 +110,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
     carrying: null,
     time: 0,
     winTimer: 0,
+    found: 0,
     beats: new Set(),
   };
 
@@ -106,7 +143,9 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
     state.carrying = null;
     state.time = 0;
     state.winTimer = 0;
+    state.found = 0;
     state.beats.clear();
+    resetFinds(finds);
 
     for (const item of [...cells, ...canisters]) resetItem(item, scene);
 
@@ -125,6 +164,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
 
     audio.setUrgency(0);
     hud.setCells(0);
+    hud.setFinds(0);
     hud.setOxygen(state.oxygen, CONFIG.oxygenSeconds);
     hud.setObjective("Найти энергоячейку");
   }
@@ -301,6 +341,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
       dust.update(dt);
 
       for (const item of [...cells, ...canisters]) animateItem(item, state.time);
+      animateFinds(finds, state.time);
 
       if (controllable) {
         if (!state.carrying) {
@@ -312,6 +353,24 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
           }
         } else if (player.position.distanceTo(station.group.position) < CONFIG.depositRadius) {
           deposit();
+        }
+
+        // Находки: сначала наводка издалека, потом сама находка вблизи
+        for (const find of finds) {
+          if (find.found) continue;
+          const d = Math.hypot(find.x - player.position.x, find.z - player.position.z);
+
+          if (!find.hinted && d < CONFIG.findHintRadius) {
+            find.hinted = true;
+            say(find.near, 4);
+          }
+          if (d < CONFIG.findRadius) {
+            find.found = true;
+            state.found++;
+            hud.setFinds(state.found);
+            audio.discovery();
+            say(find.line, 7);
+          }
         }
 
         const can = nearest(canisters, CONFIG.pickupRadius);
@@ -369,6 +428,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
             ? { x: 0, z: 0 }
             : CELL_SPOTS[state.delivered] ?? null,
           time: state.time,
+          finds,
         });
       }
 

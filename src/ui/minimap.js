@@ -130,6 +130,25 @@ export function createMinimap() {
     ctx.fill();
   }
 
+  /** Находки появляются на карте только после того, как их нашли. */
+  function drawFinds(finds) {
+    if (!finds) return;
+    for (const find of finds) {
+      if (!find.found) continue;
+      const { px, py } = toMap(find.x, find.z);
+
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.strokeStyle = "rgba(232, 112, 58, 0.9)";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(-4, -4); ctx.lineTo(4, 4);
+      ctx.moveTo(4, -4); ctx.lineTo(-4, 4);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   function drawPlayer(position, facing) {
     const { px, py } = toMap(position.x, position.z);
     ctx.save();
@@ -176,7 +195,7 @@ export function createMinimap() {
     },
 
     /** Рисует кадр карты. Вызывать только когда она открыта. */
-    draw({ position, facing, target, time }) {
+    draw({ position, facing, target, time, finds }) {
       ctx.clearRect(0, 0, SIZE, SIZE);
 
       ctx.imageSmoothingEnabled = true;
@@ -197,6 +216,7 @@ export function createMinimap() {
       }
 
       drawTarget(target, time);
+      drawFinds(finds);
       drawStation();
       markers.forEach((m, i) => {
         const { px, py } = toMap(m.x, m.z);

@@ -196,6 +196,13 @@ export function createAudio() {
       tone({ freq: 780, dur: 0.12, gain: 0.05, type: "sine" });
     },
 
+    /** Находка: короткий восходящий аккорд, отличимый от подбора ячейки. */
+    discovery() {
+      [523, 659, 784].forEach((f, i) =>
+        tone({ freq: f, dur: 0.55, gain: 0.055, type: "triangle", delay: i * 0.09 })
+      );
+    },
+
     warning() {
       tone({ freq: 880, dur: 0.1, gain: 0.09, type: "square" });
       tone({ freq: 880, dur: 0.1, gain: 0.09, type: "square", delay: 0.17 });

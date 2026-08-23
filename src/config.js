@@ -27,6 +27,8 @@ export const CONFIG = {
   oxygenSeconds: 240,
   oxygenLowAt: 60,
   pickupRadius: 2.2,
+  findRadius: 3.2, // подойти к находке
+  findHintRadius: 42, // на этой дистанции станция даёт наводку
   depositRadius: 4.0,
 
   // --- Мир ---

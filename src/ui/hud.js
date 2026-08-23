@@ -8,6 +8,8 @@ export function createHUD() {
   const subtitleEl = document.getElementById("subtitle");
   const screenEl = document.getElementById("screen");
   const muteEl = document.getElementById("mute");
+  const findCountEl = document.getElementById("find-count");
+  const findsEl = document.querySelector("#objective .finds");
 
   let subtitleTimer = 0;
 
@@ -37,6 +39,11 @@ export function createHUD() {
 
     setObjective(text) {
       objectiveEl.textContent = text;
+    },
+
+    setFinds(count) {
+      findCountEl.textContent = String(count);
+      findsEl.classList.toggle("got", count > 0);
     },
 
     setCells(count) {
