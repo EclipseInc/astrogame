@@ -14,6 +14,7 @@ export function createMinimap() {
   const root = document.getElementById("map");
   const canvas = document.getElementById("map-canvas");
   const counter = document.getElementById("map-count");
+  const closeBtn = document.getElementById("map-close");
   const ctx = canvas.getContext("2d");
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -187,11 +188,14 @@ export function createMinimap() {
       if (!terrainLayer) terrainLayer = buildTerrainLayer();
       open = true;
       root.classList.add("shown");
+      // Тач-панель под открытой картой только мешает
+      document.body.classList.add("map-open");
     },
 
     close() {
       open = false;
       root.classList.remove("shown");
+      document.body.classList.remove("map-open");
     },
 
     /** Рисует кадр карты. Вызывать только когда она открыта. */
@@ -242,6 +246,8 @@ export function createMinimap() {
 
     counter.textContent = `${markers.length} / ${MAX_MARKERS}`;
   });
+
+  closeBtn.addEventListener("click", () => api.close());
 
   // Правый клик по карте не должен открывать системное меню
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());

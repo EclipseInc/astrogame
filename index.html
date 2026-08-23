@@ -39,17 +39,42 @@
       </div>
     </div>
 
+    <!-- Управление с телефона -->
+    <div id="touch" class="hidden">
+      <div id="stick"><div id="stick-knob"></div></div>
+      <div id="touch-buttons">
+        <button class="tbtn wide" data-action="jump" data-hold>ПРЫЖОК</button>
+        <div class="trow">
+          <button class="tbtn" data-action="rotateLeft" aria-label="Повернуть камеру влево">&#8630;</button>
+          <button class="tbtn" data-action="rotateRight" aria-label="Повернуть камеру вправо">&#8631;</button>
+          <button class="tbtn" data-action="torch" aria-label="Фонарь">F</button>
+          <button class="tbtn" data-action="ride" aria-label="Ровер">R</button>
+          <button class="tbtn" data-action="map" aria-label="Карта">M</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Просьба повернуть телефон: в портрете изометрия нечитаема -->
+    <div id="rotate-hint">
+      <div>
+        <div class="icon">&#8635;</div>
+        <p>Поверни устройство горизонтально</p>
+      </div>
+    </div>
+
     <!-- Карта -->
     <div id="map">
       <div class="panel">
         <div class="head">
           <span class="title">КАРТА · КРАТЕР-7</span>
           <span class="count" id="map-count">0 / 8</span>
+          <button id="map-close" type="button" aria-label="Закрыть карту">&#10005;</button>
         </div>
         <canvas id="map-canvas" width="420" height="420"></canvas>
         <div class="foot">
-          <span>Клик — поставить метку · клик по метке — убрать</span>
-          <span><b>M</b> или <b>Esc</b> — закрыть</span>
+          <span class="hint-mouse">Клик — поставить метку · клик по метке — убрать</span>
+          <span class="hint-touch">Тап — поставить метку · тап по метке — убрать</span>
+          <span class="hint-mouse"><b>M</b> или <b>Esc</b> — закрыть</span>
         </div>
       </div>
     </div>

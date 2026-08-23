@@ -11,7 +11,8 @@ import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 
 export const PORT = 5273;
-export const BASE = `http://localhost:${PORT}`;
+// vite.config задаёт base для GitHub Pages, dev-сервер его тоже соблюдает
+export const BASE = `http://localhost:${PORT}/astrogame/`;
 export const SHOTS = path.resolve("tools/shots");
 export const OUT = path.resolve("tools/out");
 

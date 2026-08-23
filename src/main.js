@@ -5,6 +5,7 @@ import { createSky } from "./world/sky.js";
 import { createHUD } from "./ui/hud.js";
 import { createMinimap } from "./ui/minimap.js";
 import { createAudio } from "./audio/audio.js";
+import { createTouchControls } from "./ui/touch.js";
 import { createGame } from "./game/game.js";
 
 const canvas = document.getElementById("scene");
@@ -30,6 +31,7 @@ const sky = createSky();
 sky.resize(window.innerWidth / window.innerHeight);
 
 const minimap = createMinimap();
+const touch = createTouchControls(input);
 const audio = createAudio();
 hud.bindMute(audio);
 const game = createGame({ hud, input, isoCam, minimap, audio });
@@ -50,12 +52,13 @@ document.getElementById("start").addEventListener("click", () => {
   audio.radio();
   hud.hideScreen();
   hud.show();
+  if (touch.enabled) touch.setVisible(true);
 });
 
 // Дев-хук: удобно дёргать шаги симуляции и состояние из консоли
 if (import.meta.env.DEV) {
   const collision = await import("./world/collision.js");
-  window.__game = { game, isoCam, input, renderer, collision, minimap, audio };
+  window.__game = { game, isoCam, input, renderer, collision, minimap, audio, touch };
 }
 
 const clock = new THREE.Clock();
