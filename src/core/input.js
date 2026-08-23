@@ -8,6 +8,7 @@ const KEYS = {
   rotateRight: ["KeyE"],
   torch: ["KeyF"],
   map: ["KeyM"],
+  ride: ["KeyR"],
   cancel: ["Escape"],
 };
 

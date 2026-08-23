@@ -13,6 +13,7 @@ import {
 import { animateItem, createCanister, createEnergyCell, resetItem } from "../world/items.js";
 import { animateFinds, createFinds, resetFinds } from "../world/finds.js";
 import { createPlayer } from "../player/player.js";
+import { createRoverRig } from "../player/rover.js";
 import { createFootprints } from "../fx/footprints.js";
 import { createDust } from "../fx/dust.js";
 
@@ -76,7 +77,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
 
   scene.add(createTerrain());
   const station = createStation(scene);
-  createRover(scene, 18, 15);
+  const roverParts = createRover(scene, 18, 15);
   createCraterSteps(scene);
   createShadowRidge(scene, CELL_SPOTS[2]);
 
@@ -99,6 +100,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
   const footprints = createFootprints(scene);
   const dust = createDust(scene);
 
+  const rover = createRoverRig(roverParts, scene);
   const finds = createFinds(scene, FIND_SPOTS);
   const cells = CELL_SPOTS.map((s, i) => createEnergyCell(scene, s.x, s.z, i));
   const canisters = CANISTER_SPOTS.map((s) => createCanister(scene, s.x, s.z));
@@ -157,6 +159,7 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
     station.dish.rotation.set(Math.PI * 0.72, 0, 0.3);
     lighting.setDawn(0);
 
+    rover.reset(18, 15);
     player.reset(SPAWN);
     footprints.clear();
     dust.clear();
@@ -193,6 +196,9 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
     fn();
   }
 
+  const distanceTo = (v) =>
+    Math.hypot(v.x - player.position.x, v.z - player.position.z);
+
   function nearest(list, radius) {
     let best = null;
     let bestD = radius;
@@ -207,11 +213,20 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
     return best;
   }
 
-  function pickUp(cell) {
-    cell.state = "carried";
-    player.model.carrySlot.add(cell.group);
+  /**
+   * Ячейка едет либо на спине, либо в багажнике ровера. За рулём модель
+   * космонавта скрыта, и груз на ней исчез бы вместе с ней.
+   */
+  function stowCell(cell) {
+    const holder = rover.driving ? rover.cargo : player.model.carrySlot;
+    holder.add(cell.group);
     cell.group.position.set(0, 0, 0);
     cell.group.rotation.set(0, 0, 0);
+  }
+
+  function pickUp(cell) {
+    cell.state = "carried";
+    stowCell(cell);
     hud.setObjective("Доставить ячейку к антенне");
     audio.pickup();
     say("<b>Кратер-7:</b> Ячейка у тебя. Неси её к антенне.", 4);
@@ -326,9 +341,29 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
       if (input.justPressed("torch")) player.toggleTorch();
 
       const controllable = state.phase === "play" && !minimap.open;
-      player.update(dt, controllable ? input : IDLE_INPUT, isoCam.yaw);
 
-      if (player.stepped) {
+      // Починка и посадка: одна клавиша R на оба действия
+      if (controllable && input.justPressed("ride")) {
+        if (rover.driving) {
+          rover.exit(player);
+          if (state.carrying) stowCell(state.carrying);
+          say("<b>Кратер-7:</b> Ровер заглушен.", 2.5);
+        } else if (rover.fixed && distanceTo(rover.position) < CONFIG.roverEnterRadius) {
+          rover.enter(player);
+          if (state.carrying) stowCell(state.carrying);
+          audio.deposit();
+        }
+      }
+
+      if (rover.driving) {
+        // Игрока везёт сам ровер: он ставит его на сиденье и правит поворот
+        rover.update(dt, controllable ? input : IDLE_INPUT, isoCam.yaw, player);
+        if (rover.speed > 3) dust.burst(rover.position, 2, 0.4);
+      } else {
+        player.update(dt, controllable ? input : IDLE_INPUT, isoCam.yaw);
+      }
+
+      if (player.stepped && !rover.driving) {
         footprints.step(player.position, player.facing);
         dust.burst(player.position, 3, 0.35);
         audio.step();
@@ -353,6 +388,19 @@ export function createGame({ hud, input, isoCam, minimap, audio }) {
           }
         } else if (player.position.distanceTo(station.group.position) < CONFIG.depositRadius) {
           deposit();
+        }
+
+        // Оторванное колесо: подобрал — ровер на ходу
+        if (!rover.fixed && distanceTo(rover.spare.position) < CONFIG.pickupRadius) {
+          rover.repair();
+          audio.deposit();
+          beat("roverFixed", () =>
+            say(
+              "<b>Кратер-7:</b> Колесо на месте, ровер на ходу. Садись — <b>R</b>. " +
+                "На уступы и колонны он не заедет, там ногами.",
+              6
+            )
+          );
         }
 
         // Находки: сначала наводка издалека, потом сама находка вблизи

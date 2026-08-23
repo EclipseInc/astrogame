@@ -370,12 +370,17 @@ export function createStation(scene) {
   return { group, dish, sockets, baseY };
 }
 
-/** Разбитый ровер у точки старта — заодно крючок для будущей механики транспорта. */
+/**
+ * Разбитый ровер у точки старта. Возвращает всё, что нужно механике транспорта:
+ * колёса для вращения, оторванное колесо как деталь для починки и собственную
+ * платформу — её снимают, когда ровер перестаёт быть препятствием и едет.
+ */
 export function createRover(scene, x, z) {
   const group = new THREE.Group();
   group.name = "rover";
   const y = terrainHeight(x, z);
   group.position.set(x, y, z);
+  // Пока сломан — завалился набок
   group.rotation.set(0.16, 0.9, -0.28);
 
   const body = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.8, 2.0), panelMat);
@@ -393,28 +398,43 @@ export function createRover(scene, x, z) {
     color: 0x33383d,
     roughness: 0.9,
   });
-  for (const [wx, wz] of [
-    [1.3, 1.05],
-    [1.3, -1.05],
-    [-1.3, 1.05],
-    [-1.3, -1.05],
+
+  const wheels = [];
+  // Правое переднее гнездо пустует — его колесо валяется рядом
+  for (const [wx, wz, missing] of [
+    [1.3, 1.05, true],
+    [1.3, -1.05, false],
+    [-1.3, 1.05, false],
+    [-1.3, -1.05, false],
   ]) {
+    if (missing) continue;
     const w = new THREE.Mesh(wheelGeo, wheelMat);
     w.rotation.x = Math.PI / 2;
     w.position.set(wx, 0.62, wz);
     w.castShadow = true;
     group.add(w);
+    wheels.push(w);
   }
 
-  // Оторванное колесо рядом — читается как авария
-  const loose = new THREE.Mesh(wheelGeo, wheelMat);
-  loose.position.set(x + 3.2, terrainHeight(x + 3.2, z + 1.6) + 0.2, z + 1.6);
-  loose.rotation.set(0.2, 0, 1.2);
-  loose.castShadow = true;
-  scene.add(loose);
+  // Куда кладётся энергоячейка, когда её везут
+  const cargo = new THREE.Object3D();
+  cargo.position.set(-0.7, 2.2, 0);
+  group.add(cargo);
+
+  // Место под недостающее колесо — туда оно и встанет при починке
+  const socket = new THREE.Object3D();
+  socket.position.set(1.3, 0.62, 1.05);
+  group.add(socket);
+
+  // Само колесо: деталь, за которой надо сходить
+  const spare = new THREE.Mesh(wheelGeo, wheelMat);
+  spare.position.set(x + 5.4, terrainHeight(x + 5.4, z + 3.2) + 0.2, z + 3.2);
+  spare.rotation.set(0.2, 0, 1.2);
+  spare.castShadow = true;
+  scene.add(spare);
 
   scene.add(group);
-  // На разбитый ровер можно забраться — заодно самая заметная «ступенька» у старта
-  registerSolid(group, { grip: 0.85 });
-  return group;
+  const platform = registerSolid(group, { grip: 0.85, kind: "rover" });
+
+  return { group, wheels, wheelGeo, wheelMat, socket, cargo, spare, platform };
 }

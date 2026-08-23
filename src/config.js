@@ -23,13 +23,22 @@ export const CONFIG = {
   sunElevation: 16 * DEG, // низко над горизонтом → длинные тени, но площадки не тонут в них
   sunAzimuth: 125 * DEG,
 
+  // --- Ровер ---
+  roverSpeed: 11.5, // вдвое быстрее пешего хода
+  roverAccel: 2.2,
+  roverBrake: 3.5,
+  roverTurn: 2.6, // скорость доворота к направлению
+  roverEnterRadius: 3.4,
+
   // --- Игра ---
   oxygenSeconds: 240,
   oxygenLowAt: 60,
   pickupRadius: 2.2,
   findRadius: 3.2, // подойти к находке
   findHintRadius: 42, // на этой дистанции станция даёт наводку
-  depositRadius: 4.0,
+  // Совпадает с площадкой антенны: ячейка сдаётся, как только въехал на неё.
+  // На ровере со скоростью 11.5 м/с в прежние 4 м было почти не попасть.
+  depositRadius: 5.2,
 
   // --- Мир ---
   worldSize: 400,
